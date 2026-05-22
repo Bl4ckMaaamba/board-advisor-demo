@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light theme (default) — warm sand / cream tones */
+  :root {
+    --background: 33 22% 88%;
+    --foreground: 28 18% 12%;
+    --card: 35 18% 92%;
+    --card-foreground: 28 18% 12%;
+    --popover: 35 18% 92%;
+    --popover-foreground: 28 18% 12%;
+    --primary: 28 55% 28%;
+    --primary-foreground: 38 20% 95%;
+    --secondary: 33 14% 82%;
+    --secondary-foreground: 28 18% 20%;
+    --muted: 33 12% 82%;
+    --muted-foreground: 28 10% 36%;
+    --accent: 33 14% 85%;
+    --accent-foreground: 28 18% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 33 14% 77%;
+    --input: 33 14% 80%;
+    --ring: 28 55% 28%;
+    --radius: 0.625rem;
+  }
+
+  /* Dark theme */
+  .dark {
+    --background: 225 14% 5%;
+    --foreground: 40 12% 90%;
+    --card: 225 12% 8%;
+    --card-foreground: 40 12% 90%;
+    --popover: 225 12% 8%;
+    --popover-foreground: 40 12% 90%;
+    --primary: 38 62% 56%;
+    --primary-foreground: 225 14% 5%;
+    --secondary: 225 10% 13%;
+    --secondary-foreground: 40 10% 80%;
+    --muted: 225 10% 13%;
+    --muted-foreground: 225 8% 55%;
+    --accent: 38 35% 18%;
+    --accent-foreground: 38 62% 56%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 225 8% 15%;
+    --input: 225 8% 15%;
+    --ring: 38 62% 56%;
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Grain texture overlay (dark mode only) */
+.dark .grain-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Input focus glow */
+input:focus-visible {
+  box-shadow: 0 0 0 1px hsl(var(--ring) / 0.35),
+    0 0 16px -4px hsl(var(--ring) / 0.12) !important;
+  border-color: hsl(var(--ring) / 0.4) !important;
+  outline: none !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--muted)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Shine border animation */
+@keyframes shine {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+.animate-shine {
+  animation: shine var(--duration, 14s) infinite linear;
+}
+
+/* Print styles (PDF export) */
+@media print {
+  /* Hide navigation, particles, overlays, and any print:hidden elements */
+  .fixed,
+  nav,
+  canvas,
+  .grain-overlay::after,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Reset card backgrounds for clean print */
+  [class*="bg-card"],
+  [class*="bg-background"],
+  [class*="spotlight-card"] {
+    background: white !important;
+    border-color: #ddd !important;
+  }
+
+  /* Prose content optimized for print */
+  .prose {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    color: #000 !important;
+    max-width: 100% !important;
+  }
+  .prose h1, .prose h2, .prose h3 { color: #000 !important; }
+  .prose a { color: #000 !important; text-decoration: underline !important; }
+
+  /* Page breaks */
+  h1, h2 { page-break-after: avoid; }
+  h3 { page-break-after: avoid; }
+  pre, blockquote, table, figure { page-break-inside: avoid; }
+
+  /* Page margins */
+  @page { margin: 2cm; }
+
+  /* Remove padding from main content for full-width print */
+  main { padding: 0 !important; max-width: 100% !important; }
+}
+
+/* Respect prefers-reduced-motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
