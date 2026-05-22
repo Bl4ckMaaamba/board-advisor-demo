@@ -4,7 +4,7 @@
 
 **Board Advisor** est une plateforme de gouvernance d'entreprise. Son chatbot agentique (`/dashboard/chat`) est construit sur Claude Sonnet 4.6 et orchestre **7 tools externes** en parallèle pour répondre aux questions des administrateurs (RAG documents internes, Pappers, FMP, Brave Search, Legifrance, FRED, etc.).
 
-L'objectif du devoir est de **démontrer que l'architecture de l'agent est extensible** : ajouter un 8ᵉ tool — production-ready, testé, composable avec les tools existants — doit prendre quelques dizaines de minutes, sans toucher au cœur de l'orchestrateur.
+L'objectif du devoir est de **démontrer que l'architecture de l'agent est extensible** : ajouter un 8ᵉ tool — production-ready, composable avec les tools existants — doit prendre une trentaine de minutes, sans toucher au cœur de l'orchestrateur.
 
 ## Énoncé
 
@@ -14,7 +14,7 @@ L'objectif du devoir est de **démontrer que l'architecture de l'agent est exten
 
 ### Exigences fonctionnelles
 
-Le tool doit satisfaire les **5 exigences** suivantes, toutes obligatoires :
+Le tool doit satisfaire les **4 exigences** suivantes, toutes obligatoires :
 
 1. **Handler de base** — fetch sur l'API BODACC, parsing du JSON, formatage du résultat en chaîne lisible par le LLM avec une ligne par annonce (`<date> · <type> · <ville> · <résumé>`), première ligne = nombre total trouvé, dernière ligne = `[Source: BODACC]` pour l'extraction automatique de source.
 
@@ -23,8 +23,6 @@ Le tool doit satisfaire les **5 exigences** suivantes, toutes obligatoires :
 3. **Filtrage SIREN strict** — si l'input `siren` est fourni (9 chiffres), le tool doit utiliser le champ `registre` du BODACC pour un match **exact**, pas une recherche textuelle floue (qui retourne souvent des faux positifs sur les filiales homonymes). Si seul `company_name` est fourni, recherche textuelle classique.
 
 4. **Composition avec `get_company_info`** — la `description` du tool dans `AGENT_TOOLS` doit **explicitement** suggérer à l'agent de chaîner Pappers + BODACC pour les questions de due diligence (ex : *« Utilisez ce tool en complément de `get_company_info` : Pappers donne l'état actuel d'une société, BODACC donne l'historique des événements légaux. Pour une analyse de due diligence complète, appelez d'abord `get_company_info` pour récupérer le SIREN, puis ce tool avec le SIREN en input pour un match exact »*).
-
-5. **Test unitaire** — au moins un test du handler qui mocke `fetch` et vérifie le formatage du résultat (compte total, présence de `[Source: BODACC]`, gestion du cas 0 résultat, gestion de l'erreur réseau). Aucun framework de test n'est configuré dans le repo — **vous devez installer et configurer Vitest** (recommandé, intégration TS native) ou un équivalent.
 
 ### Contraintes
 
@@ -36,7 +34,7 @@ Le tool doit satisfaire les **5 exigences** suivantes, toutes obligatoires :
 
 ## Critère de réussite
 
-Les 5 vérifications suivantes doivent toutes passer :
+Les 5 vérifications suivantes doivent toutes passer (4 scénarios chat + le build) :
 
 ### 1. Requête simple — le tool est appelé et retourne des données réelles
 
@@ -65,13 +63,7 @@ Poser : *« Fais-moi un point de due diligence sur la société Carrefour : éta
 
 Attendu : dans le panneau d'activité, voir **les deux tools s'exécuter** : `get_company_info` (Pappers) **puis** `get_bodacc_announcements`. L'agent doit avoir compris le chaînage grâce à la `description` du tool.
 
-### 5. Test unitaire — le handler passe ses tests
-
-```bash
-npm test    # le test du handler bodacc passe
-```
-
-### 6. Build propre
+### 5. Build propre
 
 ```bash
 npx tsc --noEmit    # 0 erreur
@@ -146,7 +138,7 @@ Documentation complète : https://bodacc-datadila.opendatasoft.com/explore/datas
 
 ## Les fichiers à modifier / créer
 
-L'extension d'un tool passe par exactement **4 fichiers de production** + **2 fichiers de test** (à créer en même temps que le framework Vitest).
+L'extension d'un tool passe par exactement **4 fichiers** : 3 modifications + 1 nouveau fichier.
 
 ### 1. `src/lib/agent/tools/definitions.ts` — Déclarer le tool
 
@@ -186,32 +178,15 @@ Logique attendue :
 
 - 1 entrée dans `TOOL_LABELS` : `get_bodacc_announcements: "Annonces BODACC"`.
 
-### 5. Setup Vitest + test unitaire (exigence 5)
-
-```bash
-npm install -D vitest @vitest/ui
-```
-
-Créer :
-- `vitest.config.ts` à la racine (config minimale qui charge `tsconfig.json`).
-- `package.json` → ajouter `"test": "vitest run"` (et `"test:watch": "vitest"`).
-- `src/lib/agent/tools/bodacc.test.ts` : tests qui mockent `globalThis.fetch` (via `vi.fn()`) et vérifient :
-  - Formatage correct avec N annonces.
-  - Présence de `[Source: BODACC]` dans la sortie.
-  - Comportement sur 0 résultat.
-  - Gestion d'une erreur réseau (`fetch` rejette).
-  - **Bonus** : utilisation effective de `refine.registre` quand `siren` est fourni (vérifier l'URL d'appel).
-
 ## Vérification finale
 
 ```bash
 npx tsc --noEmit    # 0 erreur
 npm run lint        # 0 erreur
-npm test            # tous les tests passent
 npm run dev         # serveur démarre sans warning
 ```
 
-Puis exécuter manuellement les **5 scénarios** du **Critère de réussite** ci-dessus dans `/dashboard/chat`.
+Puis exécuter manuellement les **4 scénarios chat** du **Critère de réussite** ci-dessus dans `/dashboard/chat`.
 
 ## Ce que cet exercice démontre
 
@@ -220,6 +195,5 @@ Puis exécuter manuellement les **5 scénarios** du **Critère de réussite** ci
 - Le streaming SSE, le panel d'activité UI, et l'extraction des sources fonctionnent **sans aucun changement** côté frontend.
 - TypeScript et ESLint garantissent que si une étape de wiring est oubliée, le build échoue immédiatement.
 - La **composition entre tools** ne demande aucune logique d'orchestration custom : l'agent chaîne `get_company_info` → `get_bodacc_announcements` simplement parce que les `description` de chaque tool sont écrites pour s'auto-suggérer entre elles.
-- L'absence de framework de test dans le repo n'empêche pas d'en ajouter un proprement : Vitest s'installe en 1 commande et lit le `tsconfig.json` existant — c'est le signe d'une codebase qui ne fait pas obstacle aux ajouts d'outillage.
 
-Le critère de qualité d'une architecture extensible : **on ne devrait rien avoir à comprendre du cœur du système pour ajouter une feature périphérique production-ready (testée, paginée, composable)**. C'est ce que ce devoir mesure.
+Le critère de qualité d'une architecture extensible : **on ne devrait rien avoir à comprendre du cœur du système pour ajouter une feature périphérique production-ready (paginée, composable)**. C'est ce que ce devoir mesure.
